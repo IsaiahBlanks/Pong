@@ -3,9 +3,11 @@ package Pong;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Random;
 
 public class PongWindow extends JFrame {
 
+    private Random random = new Random();
     private final int BALL_DIAMETER = 40;
     private final int PADDLE_WIDTH = 30;
     private final int PADDLE_HEIGHT = 140;
@@ -13,6 +15,8 @@ public class PongWindow extends JFrame {
             paddleLeft = new Point(30, 280),
             paddleRight = new Point(620, 280);
     private GamePanel gamePanel = new GamePanel();
+    private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
+    MyScoreboard scoreboard = new MyScoreboard(player1, player2);
     private double ball_dx = 3, ball_dy = 3;
 
 
@@ -20,6 +24,7 @@ public class PongWindow extends JFrame {
         setSize(700, 700);
         setTitle("Two Player Pong!");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
 
         Timer ballUpdater = new Timer(5, new ActionListener() {
             @Override
@@ -34,8 +39,21 @@ public class PongWindow extends JFrame {
                 {
                     ball_dx = -ball_dx;
                 }
-                if(ball.x < 0|| ball.x > 645) {
-                    ball_dx = -ball_dx;
+                if(ball.x < 0) {
+                    scoreboard.changeScore(player2);
+                    ball.x = random.nextInt(200);
+                    if(player2.getText().equals("10.0")) {
+                        System.out.println("Player 2 wins!");
+                        System.exit(0);
+                    }
+                }
+                if (ball.x > 645) {
+                    scoreboard.changeScore(player1);
+                    ball.x = random.nextInt(200);
+                    if(player2.getText().equals("10.0")) {
+                        System.out.println("Player 2 wins!");
+                        System.exit(0);
+                    }
                 }
                 if(ball.y < 0 || ball.y > 620) {
                     ball_dy = -ball_dy;
@@ -85,8 +103,34 @@ public class PongWindow extends JFrame {
         });
 
         ballUpdater.start();
-        setContentPane(gamePanel);
+        setLayout(new BorderLayout());
+        add(gamePanel);
+        add(scoreboard, BorderLayout.NORTH);
         setVisible(true);
+    }
+
+    class MyScoreboard extends JPanel {
+        final int WIDTH = 50;
+        final int HEIGHT = 500;
+        MyScoreboard(JLabel player1, JLabel player2) {
+            this.setSize(WIDTH, HEIGHT);
+            JLabel divider = new JLabel(" : ");
+            this.add(player1);
+            this.add(divider);
+            this.add(player2);
+            setVisible(true);
+        }
+
+        void changeScore(JLabel playerScoreString) {
+            try {
+                double playerScoreNumber = Double.parseDouble(playerScoreString.getText());
+                playerScoreNumber++;
+                playerScoreString.setText(String.valueOf(playerScoreNumber));
+            } catch(NumberFormatException e) {
+                System.out.println("Invalid conversion of points. Expected number and got NaN");
+            }
+        }
+
     }
 
     class GamePanel extends JPanel {
@@ -108,7 +152,9 @@ public class PongWindow extends JFrame {
             g.fillRect(paddleRight.x, paddleRight.y, PADDLE_WIDTH, PADDLE_HEIGHT);
         }
 
+
     }
+
 
     public static void main(String[] args) {
         new PongWindow();
