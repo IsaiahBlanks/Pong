@@ -1,43 +1,68 @@
 package Pong;// Fig. 27.5: Server.java
-// Server portion of a client/server stream-socket connection. 
-
-import javax.swing.*;
+// Server portion of a client/server stream-socket connection.
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Random;
+import javax.swing.*;
 
-public class PongServer
-{
+public class PongServer extends JFrame {
+   private JTextField enterField; // inputs message from user
+   private JTextArea displayArea; // display information to user
    private ObjectOutputStream output; // output stream to client
    private ObjectInputStream input; // input stream from client
    private ServerSocket server; // server socket
    private Socket connection; // connection to client
+   private int counter = 1; // counter of number of connections
+   private final int BALL_DIAMETER = 40;
+   private final int PADDLE_WIDTH = 30;
+   private final int PADDLE_HEIGHT = 140;
    private Point ball = new Point(350, 40),
            paddleLeft = new Point(30, 280),
            paddleRight = new Point(620, 280);
    private double ball_dx = 3, ball_dy = 3;
-   private final int BALL_DIAMETER = 40;
-   private final int PADDLE_WIDTH = 30;
-   private final int PADDLE_HEIGHT = 140;
-   private int player2Score = 0;
-   private int player1Score = 0;
-   private int connectionNumber = 0;
-   ClientThread[] players = new ClientThread[2];
+   private GamePanel gamePanel = new GamePanel();
+   private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
+   private MyScoreboard scoreboard;
+
 
    // set up GUI
    public PongServer()
    {
-      runServer();
-   }
+      super( "Server" );
 
-   // set up and run server 
+      enterField = new JTextField(); // create enterField
+      enterField.setEditable( false );
+      enterField.addActionListener(
+              new ActionListener()
+              {
+                 // send message to client
+                 public void actionPerformed( ActionEvent event )
+                 {
+                    sendData( event.getActionCommand() );
+                    enterField.setText( "" );
+                 } // end method actionPerformed
+              } // end anonymous inner class
+      ); // end call to addActionListener
+
+      add( enterField, BorderLayout.NORTH );
+
+      displayArea = new JTextArea(); // create displayArea
+      add( new JScrollPane( displayArea ), BorderLayout.CENTER );
+
+      setSize( 300, 150 ); // set size of window
+      setVisible( true ); // show window
+   } // end Server constructor
+
+   // set up and run server
    public void runServer()
    {
       try // set up server to receive connections; process connections
@@ -45,19 +70,21 @@ public class PongServer
          server = new ServerSocket( 12345, 100 ); // create ServerSocket
 
          while ( true )  // infinite loop
+         {
+            try
             {
-               try
-               {
                waitForConnection(); // wait for a connection from Client
-               startGame();
+               getStreams(); // get input & output streams
+               processConnection(); // process connection
             } // end try
             catch ( EOFException eofException )
             {
-               eofException.printStackTrace();
+               displayMessage( "\nServer terminated connection" );
             } // end catch
-            finally 
+            finally
             {
                closeConnection(); //  close connection
+               ++counter;
             } // end finally
          } // end while
       } // end try
@@ -67,73 +94,65 @@ public class PongServer
       } // end catch
    } // end method runServer
 
-   private void startGame() {
-      Random random = new Random();
-      Timer ballUpdater = new Timer(5, new ActionListener() {
-         @Override
-         public void actionPerformed(ActionEvent e) {
-            ball.translate((int) ball_dx,(int) ball_dy);
-            if(((ball.x < 60 && ball.x > 0) &&
-                    ((ball.y < paddleLeft.y + PADDLE_HEIGHT) && (ball.y > paddleLeft.y))
-                    && ball_dx < 0)
-                    || ((ball.x > 580 && ball.x < 645) &&
-                    ((ball.y < paddleRight.y + PADDLE_HEIGHT) && (ball.y > paddleRight.y))
-                    && ball_dx > 0))
-            {
-               ball_dx = -ball_dx;
-            }
-            if(ball.x < 0) {
-               player2Score++;
-               ball.x = random.nextInt(200) + 400;
-               if(player2Score >= 10) {
-                  System.out.println("Player 2 wins!");
-                  closeConnection();
-                  System.exit(0);
-               }
-            }
-            if (ball.x > 645) {
-               player1Score++;
-               ball.x = random.nextInt(200);
-               if(player1Score >= 10) {
-                  System.out.println("Player 1 wins!");
-                  closeConnection();
-                  System.exit(0);
-               }
-            }
-            if(ball.y < 0 || ball.y > 620) {
-               ball_dy = -ball_dy;
-            }
-         }
-      });
-      ballUpdater.start();
-   }
-
    // wait for connection to arrive, then display connection info
    private void waitForConnection() throws IOException
    {
-
-      while (connectionNumber < 2) {
-         try {
-            connection = server.accept();
-         } catch (IOException e) {
-            e.printStackTrace();
-         }
-         players[connectionNumber] = new ClientThread(connection, connectionNumber);
-         connectionNumber++;
-      }
-      players[0].start();
-      players[1].start();
-
+      displayMessage( "Waiting for connection\n" );
+      // blocking call (synchronous call.... not asynchronous (= on demand...where your code hets called back like an event handler)
+      connection = server.accept(); // allow server to accept connection
+      displayMessage( "Connection " + counter + " received from: " +
+              connection.getInetAddress().getHostName() );
+      startGame();
    } // end method waitForConnection
 
-   // close streams and socket
-   private void closeConnection() 
+   // get streams to send and receive data
+   private void getStreams() throws IOException
    {
-      try 
+      // set up output stream for objects
+      output = new ObjectOutputStream( connection.getOutputStream() ); // Decorator DP
+      output.flush(); // flush output buffer to send header information
+
+      // set up input stream for objects
+      input = new ObjectInputStream( connection.getInputStream() );
+
+      displayMessage( "\nGot I/O streams\n" );
+   } // end method getStreams
+
+   // process connection with client
+   private void processConnection() throws IOException
+   {
+      String message = "Connection successful";
+      sendData( message ); // send connection successful message
+
+      // enable enterField so server user can send messages
+      setTextFieldEditable( true );
+
+      do // process messages sent from client
       {
-         for(int i = 0; i < players.length; i++) {
-            players[i].close();
-         }
+         try // read message and display it
+         {
+            message = ( String ) input.readObject(); // read new message
+            displayMessage( "\n" + message ); // display message
+         } // end try
+         catch ( ClassNotFoundException classNotFoundException )
+         {
+            displayMessage( "\nUnknown object type received" );
+         } // end catch
+
+      } while ( !message.equals( "CLIENT>>> TERMINATE" ) );
+   } // end method processConnection
+
+   // close streams and socket
+   private void closeConnection()
+   {
+      displayMessage( "\nTerminating connection\n" );
+      setTextFieldEditable( false ); // disable enterField
+
+      try
+      {
+         output.close(); // close output stream
+         input.close(); // close input stream
+         connection.close(); // close socket
       } // end try
       catch ( IOException ioException )
       {
@@ -141,90 +160,165 @@ public class PongServer
       } // end catch
    } // end method closeConnection
 
+   // send message to client
+   private void sendData( String message )
+   {
+      try // send object to client
+      {
+         output.writeObject( paddleLeft.x );
+         output.writeObject( paddleLeft.y );
+         output.flush(); // flush output to client
+         displayMessage( "\nSERVER>>> " + message );
+      } // end try
+      catch ( IOException ioException )
+      {
+         displayArea.append( "\nError writing object" );
+      } // end catch
+   } // end method sendData
 
-   private class ClientThread extends Thread {
-      private Socket socket;
-      private ObjectInputStream inputStream;
-      private ObjectOutputStream outputStream;
-      private int playerID;
-      public ClientThread(Socket s, int id) {
-         this.socket = s;
-         playerID = id;
-      }
+   // manipulates displayArea in the event-dispatch thread
+   private void displayMessage( final String messageToDisplay )
+   {
+      SwingUtilities.invokeLater( // call on the EDT - Event Dispatch Thread -- only thread safe to update GUI because Swing is not thread safe
+              new Runnable()
+              {
+                 public void run() // updates displayArea
+                 {
+                    displayArea.append( messageToDisplay ); // append message
+                 } // end method run
+              } // end anonymous inner class
+      ); // end call to SwingUtilities.invokeLater
+   } // end method displayMessage
 
-      public void run() {
-         try {
-            inputStream = new ObjectInputStream(socket.getInputStream());
-            outputStream = new ObjectOutputStream(socket.getOutputStream());
-            outputStream.flush();
-         } catch (IOException e) {
-            e.printStackTrace();
+   // manipulates enterField in the event-dispatch thread
+   private void setTextFieldEditable( final boolean editable )
+   {
+      SwingUtilities.invokeLater(
+              new Runnable()
+              {
+                 public void run() // sets enterField's editability
+                 {
+                    enterField.setEditable( editable );
+                 } // end method run
+              }  // end inner class
+      ); // end call to SwingUtilities.invokeLater
+   } // end method setTextFieldEditable
+
+   private void startGame() {
+      Random random = new Random();
+      scoreboard = new MyScoreboard(player1, player2);
+      Timer ballUpdater = new Timer(5, new ActionListener() {
+         @Override
+         public void actionPerformed(ActionEvent e) {
+            ball.translate((int) ball_dx, (int) ball_dy);
+            if (((ball.x < 60 && ball.x > 0) &&
+                    ((ball.y < paddleLeft.y + PADDLE_HEIGHT) && (ball.y > paddleLeft.y))
+                    && ball_dx < 0)
+                    || ((ball.x > 580 && ball.x < 645) &&
+                    ((ball.y < paddleRight.y + PADDLE_HEIGHT) && (ball.y > paddleRight.y))
+                    && ball_dx > 0)) {
+               ball_dx = -ball_dx;
+            }
+            if (ball.x < 0) {
+               scoreboard.changeScore(player2);
+               ball.x = random.nextInt(200);
+               ball.x += 400;
+               if (player2.getText().equals("10.0")) {
+                  System.out.println("Player 2 wins!");
+                  System.exit(0);
+               }
+            }
+            if (ball.x > 645) {
+               scoreboard.changeScore(player1);
+               ball.x = random.nextInt(200);
+               if (player2.getText().equals("10.0")) {
+                  System.out.println("Player 2 wins!");
+                  System.exit(0);
+               }
+            }
+            if (ball.y < 0 || ball.y > 620) {
+               ball_dy = -ball_dy;
+            }
+            repaint();
          }
-         String inputString = "";
-         while (true) {
+      });
 
-            try {
-               outputStream.writeObject(String.valueOf(ball.x));
-               outputStream.writeObject(String.valueOf(ball.y));
-               outputStream.writeObject(String.valueOf(paddleLeft.x));
-               outputStream.writeObject(String.valueOf(paddleLeft.y));
-               outputStream.writeObject(String.valueOf(paddleRight.x));
-               outputStream.writeObject(String.valueOf(paddleRight.y));
-               outputStream.flush();
-            } catch (IOException e) {
-               e.printStackTrace();
+      addKeyListener(new KeyListener() {
+         @Override
+         public void keyTyped(KeyEvent e) {
+            if (e.getKeyChar() == '+') {
+               ball_dx *= 1.05;
+               ball_dy *= 1.05;
             }
-
-            try {
-               inputString = (String) inputStream.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-               e.printStackTrace();
+            if (e.getKeyChar() == '-') {
+               ball_dx *= 0.95;
+               ball_dy *= 0.95;
             }
+         }
 
-            if (inputString.equals("UP") && playerID == 0) {
+         @Override
+         public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_UP) {
                if (paddleRight.y > 0) {
                   paddleRight.translate(0, -50);
                }
             }
-            if (inputString.equals("DOWN") && playerID == 0) {
+            if (e.getKeyCode() == KeyEvent.VK_DOWN) {
                if (paddleRight.y < 500) {
                   paddleRight.translate(0, 50);
                }
             }
+         }
 
-            if (inputString.equals("UP") && playerID == 1) {
-               if (paddleLeft.y > 0) {
-                  paddleLeft.translate(0, -50);
-               }
-            }
-            if (inputString.equals("DOWN") && playerID == 1) {
-               if (paddleLeft.y < 500) {
-                  paddleLeft.translate(0, 50);
-               }
-            }
+         @Override
+         public void keyReleased(KeyEvent e) {
+         }
+      });
+   }
+
+   static class MyScoreboard extends JPanel {
+      final int WIDTH = 50;
+      final int HEIGHT = 500;
+
+      MyScoreboard(JLabel player1, JLabel player2) {
+         this.setSize(WIDTH, HEIGHT);
+         JLabel divider = new JLabel(" : ");
+         this.add(player1);
+         this.add(divider);
+         this.add(player2);
+         setVisible(true);
+      }
+
+      void changeScore(JLabel playerScoreString) {
+         try {
+            double playerScoreNumber = Double.parseDouble(playerScoreString.getText());
+            playerScoreNumber++;
+            playerScoreString.setText(String.valueOf(playerScoreNumber));
+         } catch (NumberFormatException e) {
+            System.out.println("Invalid conversion of points. Expected number and got NaN");
          }
       }
+   }
 
 
-      public void close() throws IOException {
-         this.inputStream.close();
-         this.outputStream.close();
-         this.socket.close();
+   class GamePanel extends JPanel {
+
+      GamePanel() {
+         setBackground(new Color(225, 231, 240));
+         //setBorder(BorderFactory.createLineBorder(Color.BLACK, 5));
+      }
+
+      @Override
+      public void paintComponent(Graphics g) {
+         super.paintComponent(g);
+
+         g.setColor(Color.BLACK);
+         g.fillRect(0, 0, 700, 700);
+         g.clearRect(10, 10, 663, 643);
+         g.fillOval(ball.x, ball.y, BALL_DIAMETER, BALL_DIAMETER);
+         g.fillRect(paddleLeft.x, paddleLeft.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+         g.fillRect(paddleRight.x, paddleRight.y, PADDLE_WIDTH, PADDLE_HEIGHT);
       }
    }
-} // end class Server
+}
 
-/**************************************************************************
- * (C) Copyright 1992-2010 by Deitel & Associates, Inc. and               *
- * Pearson Education, Inc. All Rights Reserved.                           *
- *                                                                        *
- * DISCLAIMER: The authors and publisher of this book have used their     *
- * best efforts in preparing the book. These efforts include the          *
- * development, research, and testing of the theories and programs        *
- * to determine their effectiveness. The authors and publisher make       *
- * no warranty of any kind, expressed or implied, with regard to these    *
- * programs or to the documentation contained in these books. The authors *
- * and publisher shall not be liable in any event for incidental or       *
- * consequential damages in connection with, or arising out of, the       *
- * furnishing, performance, or use of these programs.                     *
- *************************************************************************/
