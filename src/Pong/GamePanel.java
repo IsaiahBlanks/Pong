@@ -40,6 +40,4 @@ class GamePanel extends JPanel {
         g.fillRect(paddleLeft.x, paddleLeft.y, PADDLE_WIDTH, PADDLE_HEIGHT);
         g.fillRect(paddleRight.x, paddleRight.y, PADDLE_WIDTH, PADDLE_HEIGHT);
     }
-
-
 }
