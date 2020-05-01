@@ -25,9 +25,17 @@ class GamePanel extends JPanel {
         paddleRight = pR;
     }
 
+    void setPaddleRightY(int y) { paddleRight.y = y; }
+
+    void setPaddleLeftY(int y) { paddleLeft.y = y; }
+
     void setBall(Point b) {
         ball = b;
     }
+
+    Point getPaddleRight() { return paddleRight; }
+
+    Point getPaddleLeft() { return paddleLeft; }
 
     @Override
     public void paintComponent(Graphics g) {
@@ -40,4 +48,6 @@ class GamePanel extends JPanel {
         g.fillRect(paddleLeft.x, paddleLeft.y, PADDLE_WIDTH, PADDLE_HEIGHT);
         g.fillRect(paddleRight.x, paddleRight.y, PADDLE_WIDTH, PADDLE_HEIGHT);
     }
+
+
 }

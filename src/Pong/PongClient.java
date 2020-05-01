@@ -15,12 +15,18 @@ public class PongClient extends JFrame {
     private JTextArea displayArea; // display information to user
     private ObjectOutputStream output; // output stream to server
     private ObjectInputStream input; // input stream from server
-    private String directionPressed;
+    private int directionPressed;
     private String pongClient; // host server for this application
     private Socket client; // socket to communicate with server
     private double ball_dx = 3, ball_dy = 3;
     GamePanel gamePanel = new GamePanel();
     private MyScoreboard scoreboard = new MyScoreboard(player1, player2);
+
+    //For reading into the client from the server
+    int paddleLeftY;
+    int newBallX;
+    int newBallY;
+    Point newBallLocation;
 
     // initialize chatServer and set up GUI
     public PongClient( String host )
@@ -48,10 +54,10 @@ public class PongClient extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_UP) {
-                    directionPressed = "up";
+                    directionPressed = -50;
                     }
                 if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    directionPressed = "down";
+                    directionPressed = 50;
                 }
             }
             @Override
@@ -104,7 +110,7 @@ public class PongClient extends JFrame {
     {
         // set up output stream for objects
         output = new ObjectOutputStream( client.getOutputStream() );
-        output.writeObject(directionPressed);
+        output.writeInt(directionPressed);
         output.flush(); // flush output buffer to send header information
 
         // set up input stream for objects
@@ -120,17 +126,19 @@ public class PongClient extends JFrame {
         {
             try // read message and display it
             {
-                gamePanel.setPaddleLeft((Point) input.readObject());
-                gamePanel.setPaddleRight((Point) input.readObject());
-                gamePanel.setBall((Point) input.readObject());
-                Integer score1 = input.readInt();
-                scoreboard.player1.setText(score1.toString());
-                Integer score2 = input.readInt();
-                scoreboard.player2.setText(score2.toString());
+                paddleLeftY = input.readInt();
+                gamePanel.setPaddleLeftY(paddleLeftY);
 
+                newBallX = input.readInt();
+                newBallY = input.readInt();
+                newBallLocation = new Point(newBallX, newBallY);
+                gamePanel.setBall(newBallLocation);
 
-                //message = ( String ) input.readObject(); // read new message
-                //displayMessage( "\n" + message ); // display message
+                String player1Score = (String) input.readObject();
+                String player2Score = (String) input.readObject();
+                player1.setText(player1Score);
+                player2.setText(player2Score);
+
             } // end try
             catch ( ClassNotFoundException classNotFoundException)
             {
