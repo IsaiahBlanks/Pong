@@ -55,9 +55,15 @@ public class PongClient extends JFrame {
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_UP) {
                     directionPressed = -50;
+                    if (gamePanel.getPaddleRight().y > 0) {
+                        gamePanel.getPaddleRight().translate(0, -50);
+                    }
                     }
                 if(e.getKeyCode() == KeyEvent.VK_DOWN) {
                     directionPressed = 50;
+                    if (gamePanel.getPaddleRight().y < 500) {
+                        gamePanel.getPaddleRight().translate(0, 50);
+                    }
                 }
             }
             @Override
