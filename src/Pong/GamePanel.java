@@ -33,6 +33,8 @@ class GamePanel extends JPanel {
         ball = b;
     }
 
+    Point getBall() { return this.ball; }
+
     Point getPaddleRight() { return paddleRight; }
 
     Point getPaddleLeft() { return paddleLeft; }
