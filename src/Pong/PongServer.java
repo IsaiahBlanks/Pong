@@ -145,8 +145,8 @@ public class PongServer extends JFrame {
          output.writeInt( paddleLeft.y );
          output.writeInt(ball.x);
          output.writeInt(ball.y);
-         output.writeObject(player1.toString());
-         output.writeObject(player2.toString());
+         output.writeObject(player1.getText());
+         output.writeObject(player2.getText());
          output.flush();
       }
       catch ( IOException ioException )
