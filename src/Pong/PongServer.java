@@ -38,7 +38,7 @@ public class PongServer extends JFrame {
    {
       super( "Server" );
       setDefaultCloseOperation(EXIT_ON_CLOSE);
-      setSize(700, 700);
+      setSize(700, 730);
       setLayout(new BorderLayout());
       add(gamePanel);
       add(scoreboard, BorderLayout.NORTH);

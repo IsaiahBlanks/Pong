@@ -32,7 +32,7 @@ public class PongClient extends JFrame {
     public PongClient( String host )
     {
         super( "Client" );
-        setSize( 700, 700 ); // set size of window
+        setSize( 700, 730 ); // set size of window
         setVisible( true );
         setLayout(new BorderLayout());
         add(gamePanel);
