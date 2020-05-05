@@ -7,20 +7,18 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import javax.swing.*;
-import javax.swing.border.Border;
+
 
 public class PongClient extends JFrame {
 
     private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
-    private JTextArea displayArea; // display information to user
-    private ObjectOutputStream output; // output stream to server
-    private ObjectInputStream input; // input stream from server
-    private int directionPressed;
-    private String pongClient; // host server for this application
-    private Socket client; // socket to communicate with server
-    private double ball_dx = 3, ball_dy = 3;
+    private ObjectOutputStream output;
+    private ObjectInputStream input;
+    private String pongClient;
+    private Socket client;
     GamePanel gamePanel = new GamePanel();
     private MyScoreboard scoreboard = new MyScoreboard(player1, player2);
+    JLabel displayArea = new JLabel();
 
     //For reading into the client from the server
     int paddleLeftY;
@@ -28,19 +26,21 @@ public class PongClient extends JFrame {
     int newBallY;
     Point newBallLocation;
 
-    // initialize chatServer and set up GUI
+
     public PongClient( String host )
     {
         super( "Client" );
-        setSize( 700, 730 ); // set size of window
+        setSize( 700, 730 );
         setVisible( true );
         setLayout(new BorderLayout());
         add(gamePanel);
         add(scoreboard, BorderLayout.NORTH);
+        add(displayArea, BorderLayout.SOUTH);
+        displayArea.setSize(700, 10);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
 
-        pongClient = host; // set server to which this client connects
+        pongClient = host;
 
         addKeyListener(new KeyListener() {
             @Override
@@ -50,13 +50,11 @@ public class PongClient extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_UP) {
-                    directionPressed = -50;
                     if (gamePanel.getPaddleRight().y > 0) {
                         gamePanel.getPaddleRight().translate(0, -50);
                     }
-                    }
+                }
                 if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    directionPressed = 50;
                     if (gamePanel.getPaddleRight().y < 500) {
                         gamePanel.getPaddleRight().translate(0, 50);
                     }
@@ -68,64 +66,63 @@ public class PongClient extends JFrame {
             }
         });
 
-         // show window
-    } // end Client constructor
 
-    // connect to server and process messages from server
+    }
+
+
     public void runClient()
     {
-        try // connect to server, get streams, process connection
+        try
         {
-            connectToServer(); // create a Socket to make connection
-            getStreams(); // get the input and output streams
-            processConnection(); // process connection
-        } // end try
+            connectToServer();
+            getStreams();
+            processConnection();
+        }
         catch ( EOFException eofException )
         {
             displayMessage( "\nClient terminated connection" );
-        } // end catch
+        }
         catch ( IOException ioException )
         {
             ioException.printStackTrace();
-        } // end catch
+        }
         finally
         {
-            closeConnection(); // close connection
-        } // end finally
-    } // end method runClient
+            closeConnection();
+        }
+    }
 
-    // connect to server
+
     private void connectToServer() throws IOException
     {
         displayMessage( "Attempting connection\n" );
 
-        // create Socket to make connection to server
+
         client = new Socket( InetAddress.getByName( pongClient ), 12345 );
 
-        // display connection information
+
         displayMessage( "Connected to: " +
                 client.getInetAddress().getHostName() );
-    } // end method connectToServer
+    }
 
-    // get streams to send and receive data
+
     private void getStreams() throws IOException
     {
-        // set up output stream for objects
+
         output = new ObjectOutputStream( client.getOutputStream() );
         output.flush(); // flush output buffer to send header information
 
-        // set up input stream for objects
+
         input = new ObjectInputStream( client.getInputStream() );
 
         displayMessage( "\nGot I/O streams\n" );
-    } // end method getStreams
+    }
 
-    // process connection with server
+
     private void processConnection() throws IOException
     {
-        do // process messages sent from server
-        {
-            try // read message and display it
+        do {
+            try
             {
                 paddleLeftY = input.readInt();
                 gamePanel.setPaddleLeftY(paddleLeftY);
@@ -141,64 +138,62 @@ public class PongClient extends JFrame {
                 player2.setText(player2Score);
                 gamePanel.repaint();
 
-            } // end try
+            }
             catch ( ClassNotFoundException classNotFoundException)
             {
                 displayMessage( "\nUnknown object type received" );
-            } // end catch
+            }
             catch (NumberFormatException e)
             {
                 displayMessage("\nReceived score which is NaN");
             }
 
 
-        } while ( !(player1.getText().equals("10") || player2.getText().equals("10")) );
-    } // end method processConnection
+        } while ( !(player1.getText().equals("10.0") || player2.getText().equals("10.0")) );
 
-    // close streams and socket
+        if(player1.getText().equals("10.0")) {
+            System.out.println("Player 1 wins!");
+        }
+        else {
+            System.out.println("Player 2 wins!");
+        }
+        System.exit(0);
+    }
+
+
     private void closeConnection()
     {
         try
         {
-            output.close(); // close output stream
-            input.close(); // close input stream
-            client.close(); // close socket
-        } // end try
+            output.close();
+            input.close();
+            client.close();
+        }
         catch ( IOException ioException )
         {
             ioException.printStackTrace();
-        } // end catch
-    } // end method closeConnection
+        }
+    }
 
-    // send message to server
     private void sendData()
     {
-        try // send object to server
+        try
         {
             output.writeInt(gamePanel.getPaddleRight().y);
             output.flush();
-        } // end try
+        }
         catch ( IOException ioException )
         {
-            displayArea.append( "\nError writing object" );
-        } // end catch
-    } // end method sendData
+            displayMessage( "\nError writing object" );
+        }
+    }
 
-    // manipulates displayArea in the event-dispatch thread
-    private void displayMessage( final String messageToDisplay )
+        private void displayMessage( final String messageToDisplay )
     {
-        // updates displayArea
-// end method run
+
+
         SwingUtilities.invokeLater(
-                () -> displayArea.append( messageToDisplay )  // end anonymous inner class
-        ); // end call to SwingUtilities.invokeLater
-    } // end method displayMessage
-    // manipulates enterField in the event-dispatch thread
-} // end class PongClient
-
-
-class Main {
-    public static void main(String[] args) {
-        new PongClient("Client");
+                () -> displayArea.setText(messageToDisplay)
+        );
     }
 }
