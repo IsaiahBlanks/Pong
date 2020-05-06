@@ -2,53 +2,97 @@ package Pong;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class PongParent extends JFrame {
-    protected GamePanel gamePanel = new GamePanel();
-    protected JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
+public abstract class PongParent extends JFrame {
+    enum Modes {SERVER {
+        @Override
+        public String toString() {
+            return "Server";
+        }
+    }, CLIENT {
+        @Override
+        public String toString() {
+            return "Client";
+        }
+    }}
+    private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
+    GamePanel gamePanel = new GamePanel();
     protected MyScoreboard scoreboard = new MyScoreboard(player1, player2);
-    protected JLabel displayArea = new JLabel();
-    protected ObjectOutputStream output;
-    protected ObjectInputStream input;
+    private Point paddle;
+    String  pongClient;
+    private JLabel displayArea = new JLabel("");
     protected Socket connection;
+    protected ObjectOutputStream output; // output stream to server
+    protected ObjectInputStream input;
 
 
-    public PongParent(String title) {
-        super(title);
-        setSize(700, 730);
+    public PongParent(Modes mode) {
+        this(mode, "");
+    }
+
+    public PongParent(Modes mode, String host) {
+        super( mode.toString());
+        setSize( 700, 730 ); // set size of window
+        setVisible( true );
         setLayout(new BorderLayout());
         add(gamePanel);
         add(scoreboard, BorderLayout.NORTH);
         add(displayArea, BorderLayout.SOUTH);
-        displayArea.setSize(700, 10);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
+
+        if(mode == Modes.CLIENT) {
+            pongClient = host;
+            paddle = gamePanel.getPaddleRight();
+        } else {
+            paddle = gamePanel.getPaddleLeft();
+        }
+        addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if(e.getKeyCode() == KeyEvent.VK_UP) {
+                    if (paddle.y > 0) {
+                        paddle.translate(0, -50);
+                    }
+                }
+                if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    if (paddle.y < 500) {
+                        paddle.translate(0, 50);
+                    }
+                }
+                if(mode == Modes.CLIENT) {
+                    sendData();
+                }
+            }
+            @Override
+            public void keyReleased(KeyEvent e) {
+            }
+        });
     }
 
-    public void run() {}
+    protected abstract void connect() throws IOException;
 
-    public void getStreams() throws IOException
-    {
+    protected abstract void runConnection();
 
-        output = new ObjectOutputStream( connection.getOutputStream() );
-        output.flush();
+    protected abstract void sendData();
 
-        input = new ObjectInputStream( connection.getInputStream() );
-
-        displayArea.setText("Got I/O streams" );
-    }
-
-    public void closeConnection()
+    protected void closeConnection()
     {
         try
         {
-            output.close();
-            input.close();
-            connection.close();
+            output.close(); // close output stream
+            input.close(); // close input stream
+            connection.close(); // close socket
         }
         catch ( IOException ioException )
         {
@@ -56,12 +100,29 @@ public class PongParent extends JFrame {
         }
     }
 
-    public void sendData() {}
+    protected void getStreams() throws IOException
+    {
+        output = new ObjectOutputStream( connection.getOutputStream() );
+        output.flush();
+        input = new ObjectInputStream( connection.getInputStream() );
 
-    public void processConnection() throws IOException {}
+        displayMessage( "\nGot I/O streams\n" );
+    }
 
+    protected void displayMessage( final String messageToDisplay )
+    {
+        SwingUtilities.invokeLater(
+                () -> displayArea.setText( messageToDisplay )
+        );
+    }
 
+    protected JLabel getPlayer1() {
+        return player1;
+    }
 
+    protected JLabel getPlayer2() {
+        return player2;
+    }
 
 
 }

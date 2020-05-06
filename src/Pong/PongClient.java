@@ -1,67 +1,28 @@
 package Pong;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import javax.swing.*;
-
 
 public class PongClient extends PongParent {
-
-    private String pongClient;
-
-
-    //For reading into the client from the server
     int paddleLeftY;
     int newBallX;
     int newBallY;
     Point newBallLocation;
 
-
     public PongClient( String host )
     {
-        super( "Client" );
-
-
-        pongClient = host;
-
-        addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if(e.getKeyCode() == KeyEvent.VK_UP) {
-                    if (gamePanel.getPaddleRight().y > 0) {
-                        gamePanel.getPaddleRight().translate(0, -50);
-                    }
-                }
-                if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    if (gamePanel.getPaddleRight().y < 500) {
-                        gamePanel.getPaddleRight().translate(0, 50);
-                    }
-                }
-                sendData();
-            }
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-        });
-
+        super( Modes.CLIENT, host );
 
     }
 
-
     @Override
-    public void run()
+    public void runConnection()
     {
         try
         {
-            connectToServer();
+            connect();
             getStreams();
             processConnection();
         }
@@ -80,22 +41,21 @@ public class PongClient extends PongParent {
     }
 
 
-    private void connectToServer() throws IOException
+    @Override
+    protected void connect() throws IOException
     {
         displayMessage( "Attempting connection\n" );
 
-
         connection = new Socket( InetAddress.getByName( pongClient ), 12345 );
-
 
         displayMessage( "Connected to: " +
                 connection.getInetAddress().getHostName() );
     }
 
-    @Override
-    public void processConnection() throws IOException
+    private void processConnection() throws IOException
     {
-        do {
+        do
+        {
             try
             {
                 paddleLeftY = input.readInt();
@@ -108,8 +68,8 @@ public class PongClient extends PongParent {
 
                 String player1Score = input.readObject().toString();
                 String player2Score = input.readObject().toString();
-                player1.setText(player1Score);
-                player2.setText(player2Score);
+                getPlayer1().setText(player1Score);
+                getPlayer2().setText(player2Score);
                 gamePanel.repaint();
 
             }
@@ -123,19 +83,11 @@ public class PongClient extends PongParent {
             }
 
 
-        } while ( !(player1.getText().equals("10.0") || player2.getText().equals("10.0")) );
-
-        if(player1.getText().equals("10.0")) {
-            System.out.println("Player 1 wins!");
-        }
-        else {
-            System.out.println("Player 2 wins!");
-        }
-        System.exit(0);
+        } while ( !(getPlayer1().getText().equals("10") || getPlayer2().getText().equals("10")) );
     }
 
     @Override
-    public void sendData()
+    protected void sendData()
     {
         try
         {
@@ -148,12 +100,4 @@ public class PongClient extends PongParent {
         }
     }
 
-        private void displayMessage( final String messageToDisplay )
-    {
-
-
-        SwingUtilities.invokeLater(
-                () -> displayArea.setText(messageToDisplay)
-        );
-    }
 }
