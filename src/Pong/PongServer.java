@@ -94,7 +94,7 @@ public class PongServer extends PongParent {
       try
       {
          System.out.println("Writing data!");
-         output.writeInt( paddleLeft.y );
+         output.writeInt( gamePanel.getPaddleLeft().y );
          output.writeInt(ball.x);
          output.writeInt(ball.y);
          output.writeObject(getPlayer1().getText());
@@ -142,8 +142,6 @@ public class PongServer extends PongParent {
             ball_dy = -ball_dy;
          }
          gamePanel.setBall(ball);
-         gamePanel.setPaddleLeft(paddleLeft);
-         gamePanel.setPaddleRight(paddleRight);
          gamePanel.repaint();
          sendData();
       });
