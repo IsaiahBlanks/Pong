@@ -12,39 +12,23 @@ import java.net.Socket;
 import java.util.Random;
 import javax.swing.*;
 
-public class PongServer extends JFrame {
+public class PongServer extends PongParent {
 
-    private ObjectOutputStream output;
-    private ObjectInputStream input;
     private ServerSocket server;
-    private Socket connection;
     private int counter = 1;
     private final int PADDLE_HEIGHT = 140;
     private Point ball = new Point(350, 40),
             paddleLeft = new Point(30, 280),
             paddleRight = new Point(620, 280);
     private double ball_dx = 3, ball_dy = 3;
-    private GamePanel gamePanel = new GamePanel();
-    private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
-    private MyScoreboard scoreboard = new MyScoreboard(player1, player2);
-    private JLabel displayArea = new JLabel();
-
-
 
     public PongServer()
     {
         super( "Server" );
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(700, 730);
-        setLayout(new BorderLayout());
-        add(gamePanel);
-        add(scoreboard, BorderLayout.NORTH);
-        add(displayArea, BorderLayout.SOUTH);
-        displayArea.setSize(700, 10);
-        setVisible( true );
     }
 
-    public void runServer()
+    @Override
+    public void run()
     {
         try
         {
@@ -86,20 +70,8 @@ public class PongServer extends JFrame {
 
     }
 
-
-    private void getStreams() throws IOException
-    {
-
-        output = new ObjectOutputStream( connection.getOutputStream() );
-        output.flush();
-
-        input = new ObjectInputStream( connection.getInputStream() );
-
-        displayArea.setText("Got I/O streams" );
-    }
-
-
-    private void processConnection()
+    @Override
+    public void processConnection()
     {
         displayArea.setText("About to start game");
         startGame();
@@ -126,22 +98,8 @@ public class PongServer extends JFrame {
         System.exit(0);
     }
 
-
-    private void closeConnection()
-    {
-
-        try {
-            output.close();
-            input.close();
-            connection.close();
-        }
-        catch ( IOException ioException )
-        {
-            ioException.printStackTrace();
-        }
-    }
-
-    private void sendData()
+    @Override
+    public void sendData()
     {
         try
         {
@@ -190,29 +148,6 @@ public class PongServer extends JFrame {
             sendData();
         });
 
-        addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_UP) {
-                    if (paddleLeft.y > 0) {
-                        paddleLeft.translate(0, -50);
-                    }
-                }
-                if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    if (paddleLeft.y < 500) {
-                        paddleLeft.translate(0, 50);
-                    }
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-        });
         ballUpdater.start();
     }
 }

@@ -9,16 +9,10 @@ import java.net.Socket;
 import javax.swing.*;
 
 
-public class PongClient extends JFrame {
+public class PongClient extends PongParent {
 
-    private JLabel player1 = new JLabel("0"), player2 = new JLabel("0");
-    private ObjectOutputStream output;
-    private ObjectInputStream input;
     private String pongClient;
-    private Socket client;
-    GamePanel gamePanel = new GamePanel();
-    private MyScoreboard scoreboard = new MyScoreboard(player1, player2);
-    JLabel displayArea = new JLabel();
+
 
     //For reading into the client from the server
     int paddleLeftY;
@@ -30,15 +24,7 @@ public class PongClient extends JFrame {
     public PongClient( String host )
     {
         super( "Client" );
-        setSize( 700, 730 );
-        setVisible( true );
-        setLayout(new BorderLayout());
-        add(gamePanel);
-        add(scoreboard, BorderLayout.NORTH);
-        add(displayArea, BorderLayout.SOUTH);
-        displayArea.setSize(700, 10);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setVisible(true);
+
 
         pongClient = host;
 
@@ -70,7 +56,8 @@ public class PongClient extends JFrame {
     }
 
 
-    public void runClient()
+    @Override
+    public void run()
     {
         try
         {
@@ -98,28 +85,15 @@ public class PongClient extends JFrame {
         displayMessage( "Attempting connection\n" );
 
 
-        client = new Socket( InetAddress.getByName( pongClient ), 12345 );
+        connection = new Socket( InetAddress.getByName( pongClient ), 12345 );
 
 
         displayMessage( "Connected to: " +
-                client.getInetAddress().getHostName() );
+                connection.getInetAddress().getHostName() );
     }
 
-
-    private void getStreams() throws IOException
-    {
-
-        output = new ObjectOutputStream( client.getOutputStream() );
-        output.flush(); // flush output buffer to send header information
-
-
-        input = new ObjectInputStream( client.getInputStream() );
-
-        displayMessage( "\nGot I/O streams\n" );
-    }
-
-
-    private void processConnection() throws IOException
+    @Override
+    public void processConnection() throws IOException
     {
         do {
             try
@@ -160,22 +134,8 @@ public class PongClient extends JFrame {
         System.exit(0);
     }
 
-
-    private void closeConnection()
-    {
-        try
-        {
-            output.close();
-            input.close();
-            client.close();
-        }
-        catch ( IOException ioException )
-        {
-            ioException.printStackTrace();
-        }
-    }
-
-    private void sendData()
+    @Override
+    public void sendData()
     {
         try
         {
