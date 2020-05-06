@@ -1,5 +1,5 @@
 package Pong;
-// Server portion of a client/server stream-socket connection.
+
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,15 +9,13 @@ import java.net.ServerSocket;
 import java.util.Random;
 
 public class PongServer extends PongParent {
-
-   private ServerSocket server; // server socket
-   private int counter = 1; // counter of number of connections
+   private ServerSocket server;
+   private int counter = 1;
    private final int PADDLE_HEIGHT = 140;
    private Point ball = new Point(350, 40),
            paddleLeft = new Point(30, 280),
            paddleRight = new Point(620, 280);
    private double ball_dx = 3, ball_dy = 3;
-
 
 
    public PongServer()
@@ -68,25 +66,25 @@ public class PongServer extends PongParent {
 
    }
 
-   // process connection with client
+
    private void processConnection()
    {
       System.out.println("About to start game");
       startGame();
 
-      do // process messages sent from client
+      do
       {
-         try // read message and display it
+         try
          {
             paddleRight.y = input.readInt();
-            gamePanel.setPaddleRight(paddleRight);// read new message
-         } // end try
+            gamePanel.setPaddleRight(paddleRight);
+         }
          catch (IOException e) {
             displayMessage("Issue receiving data! \n" + e );
          }
 
       } while ( true );
-   } // end method processConnection
+   }
 
    @Override
    protected void sendData()

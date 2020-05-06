@@ -28,7 +28,7 @@ public abstract class PongParent extends JFrame {
     String  pongClient;
     private JLabel displayArea = new JLabel("");
     protected Socket connection;
-    protected ObjectOutputStream output; // output stream to server
+    protected ObjectOutputStream output;
     protected ObjectInputStream input;
 
 
@@ -38,7 +38,7 @@ public abstract class PongParent extends JFrame {
 
     public PongParent(Modes mode, String host) {
         super( mode.toString());
-        setSize( 700, 730 ); // set size of window
+        setSize( 700, 735 );
         setVisible( true );
         setLayout(new BorderLayout());
         add(gamePanel);
@@ -90,9 +90,9 @@ public abstract class PongParent extends JFrame {
     {
         try
         {
-            output.close(); // close output stream
-            input.close(); // close input stream
-            connection.close(); // close socket
+            output.close();
+            input.close();
+            connection.close();
         }
         catch ( IOException ioException )
         {
