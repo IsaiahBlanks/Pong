@@ -1,6 +1,5 @@
 package Pong;
 
-
 import javax.swing.*;
 import java.awt.*;
 import java.io.EOFException;
@@ -12,15 +11,16 @@ public class PongServer extends PongParent {
    private ServerSocket server;
    private int counter = 1;
    private final int PADDLE_HEIGHT = 140;
-   private Point ball = new Point(350, 40),
-           paddleLeft = new Point(30, 280),
-           paddleRight = new Point(620, 280);
+   private Point ball = new Point(350, 40);
+   private Point paddleRight, paddleLeft;
    private double ball_dx = 3, ball_dy = 3;
 
 
    public PongServer()
    {
       super( Modes.SERVER );
+      paddleRight = gamePanel.getPaddleRight();
+      paddleLeft = gamePanel.getPaddleLeft();
    }
 
    @Override
@@ -148,4 +148,3 @@ public class PongServer extends PongParent {
       ballUpdater.start();
    }
 }
-
